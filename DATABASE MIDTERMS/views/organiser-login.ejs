@@ -1,0 +1,69 @@
+<!--
+Purpose: Authentication form for organiser access to administrative functions
+Database Interactions:
+- POST: Validates password against stored organiser credentials
+- GET: Retrieves error messages from session data and organiser list for display
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/main.css" />
+    <title>Organiser Login - Event Manager</title>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>Organiser Login</h1>
+            <p>Please select your name and enter your password to access the organiser portal</p>
+            <div class="nav-links">
+                <a href="/">Main Home</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Secure Access Required</h2>
+            
+            <% if (error) { %>
+                <div class="error-message">
+                    <p style="color: red; font-weight: bold;"><%= error %></p>
+                </div>
+            <% } %>
+            
+            <form action="/organiser/login" method="post">
+                <div class="form-group">
+                    <label for="organiser_id">Select Organiser:</label>
+                    <select id="organiser_id" name="organiser_id" class="form-control" required>
+                        <option value="">-- Select an organiser --</option>
+                        <% organisers.forEach(function(organiser) { %>
+                            <option value="<%= organiser.organiser_id %>"><%= organiser.name %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" class="form-control" 
+                           placeholder="Enter your password" required>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-large">
+                        Login to Organiser Portal
+                    </button>
+                </div>
+            </form>
+            
+            <div class="login-info">
+                <p class="text-muted">
+                    <strong>Note:</strong> Only authorized organizers can access this area. 
+                    If you don't have the password, please contact the site administrator.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

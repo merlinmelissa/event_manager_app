@@ -1,0 +1,49 @@
+<!--
+Purpose: Main landing page providing navigation to organiser and attendee portals
+Database Interactions:
+- None: This is a static navigation page with no database queries
+- Serves as entry point to the application's two main user paths
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/main.css" />
+    <title>Event Manager</title>
+</head>
+<body>
+    <div class="container">
+        <!-- Main application welcome section -->
+        <div class="home-page">
+            <h1>Yoga Event Manager</h1>
+            <p>Organize and attend yoga events with ease</p>
+            <!-- 
+            Navigation links to main application areas
+            Purpose: Direct users to appropriate portal based on their role
+            -->
+            <div class="home-links">
+                <!-- 
+                Link to organiser portal
+                Route: GET /organiser
+                Purpose: Access event management and administration features
+                Requires: Authentication via password
+                -->
+                <a href="/organiser" class="btn btn-organiser btn-large">
+                    Organiser Home Page
+                </a>
+                
+                <!-- 
+                Link to attendee portal
+                Route: GET /attendee
+                Purpose: Browse and book available events
+                Requires: No authentication needed
+                -->
+                <a href="/attendee" class="btn btn-attendee btn-large">
+                    Attendee Home Page
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!--
+Purpose: Allows organizers to update site-wide configuration settings
+Database Interactions:
+- GET: Retrieves current site settings from settings table
+- POST: Updates site_name and site_description in settings table
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/main.css" />
+    <title>Site Settings</title>
+</head>
+<body>
+    <!-- Header section with navigation and user actions -->
+    <div class="header">
+        <div class="container">
+            <h1>Site Settings</h1>
+            <p>Configure your event manager settings</p>
+            
+            <!-- Navigation links for organizer functions -->
+            <div class="nav-links">
+                <a href="/organiser">← Back to Organiser Home</a>
+                <!-- 
+                POST /organiser/logout
+                Purpose: Terminates organizer session and redirects to login
+                Database: Clears session data, no direct DB interaction
+                -->
+                <form action="/organiser/logout" method="post" style="display: inline;">
+                    <button type="submit" class="nav-links-logout">
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Update Site Information</h2>
+            
+            <!-- 
+            POST /organiser/settings
+            Purpose: Updates site configuration in database
+            Inputs: site_name (string), site_description (text)
+            Database: UPDATE settings SET site_name=?, site_description=? WHERE id=1
+            Output: Redirects to organiser home with success message
+            -->
+            <form action="/organiser/settings" method="post">
+                <div class="form-group">
+                    <label for="site_name">Site Name:</label>
+                    <!-- 
+                    Pre-populated with current site_name from settings table
+                    Retrieved via: SELECT site_name FROM settings WHERE id=1
+                    -->
+                    <input type="text" id="site_name" name="site_name" class="form-control" 
+                           value="<%= settings.site_name %>" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="site_description">Site Description:</label>
+                    <!-- 
+                    Pre-populated with current site_description from settings table
+                    Retrieved via: SELECT site_description FROM settings WHERE id=1
+                    -->
+                    <textarea id="site_description" name="site_description" class="form-control" 
+                              rows="4" required><%= settings.site_description %></textarea>
+                </div>
+                
+                <!-- Form submission and navigation buttons -->
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        Update Settings
+                    </button>
+                    <a href="/organiser" class="btn btn-secondary">
+                        ← Back to Organiser Home
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

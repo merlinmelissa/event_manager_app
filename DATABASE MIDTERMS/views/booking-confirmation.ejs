@@ -1,0 +1,104 @@
+<!--
+Purpose: Displays successful booking confirmation with complete transaction details
+Database Interactions:
+- GET: Retrieves event details from events table by event_id
+- GET: Retrieves booking details from bookings table (just created)
+- POST: Previous booking creation updated events table ticket counts
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/main.css" />
+    <title>Booking Confirmed</title>
+</head>
+<body>
+    <!-- Success header section -->
+    <div class="header">
+        <div class="container">
+            <h1>Booking Confirmed!</h1>
+            <p>Your tickets have been successfully booked</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Booking confirmation details -->
+        <div class="confirmation">
+            <h2>Booking Successful!</h2>
+            <p>Thank you for your booking. Here are your details:</p>
+            
+            <div class="booking-details">
+                <!-- 
+                Event information section
+                Data Source: events table
+                Purpose: Confirm which event was booked
+                -->
+                <h3>Event Details</h3>
+                <p><strong>Event:</strong> <%= event.title %></p>
+                <!-- 
+                Date formatting from event.event_date
+                Source: events.event_date column (datetime)
+                -->
+                <p><strong>Date & Time:</strong> <%= new Date(event.event_date).toLocaleString() %></p>
+                <p><strong>Description:</strong> <%= event.description %></p>
+                
+                <!-- 
+                Booking transaction details
+                Data Source: bookings table (newly created record)
+                Purpose: Show attendee what they purchased and total cost
+                -->
+                <h3>Booking Details</h3>
+                <!-- Attendee information from booking form -->
+                <p><strong>Name:</strong> <%= booking.attendee_name %></p>
+                
+                <!-- 
+                Full price tickets calculation
+                Conditional display: Only show if tickets were booked
+                Calculation: quantity × unit_price = line_total
+                -->
+                <% if (booking.full_price_tickets_booked > 0) { %>
+                    <p><strong>Full Price Tickets:</strong> <%= booking.full_price_tickets_booked %> × $<%= event.full_price_cost %> = $<%= (booking.full_price_tickets_booked * event.full_price_cost).toFixed(2) %></p>
+                <% } %>
+                
+                <!-- 
+                Concession tickets calculation
+                Conditional display: Only show if tickets were booked
+                Calculation: quantity × unit_price = line_total
+                -->
+                <% if (booking.concession_tickets_booked > 0) { %>
+                    <p><strong>Concession Tickets:</strong> <%= booking.concession_tickets_booked %> × $<%= event.concession_cost %> = $<%= (booking.concession_tickets_booked * event.concession_cost).toFixed(2) %></p>
+                <% } %>
+                
+                <!-- 
+                Total cost display
+                Source: booking.total_cost from bookings table
+                Calculated during booking process: sum of all ticket line totals
+                -->
+                <p><strong>Total Cost:</strong> $<%= booking.total_cost.toFixed(2) %></p>
+            </div>
+            
+            <!-- Navigation options after successful booking -->
+            <div class="text-center mt-3">
+                <!-- 
+                Return to attendee portal
+                Route: GET /attendee
+                Purpose: Allow booking additional events
+                -->
+                <a href="/attendee" class="btn btn-primary">
+                    Browse More Events
+                </a>
+                
+                <!-- 
+                Return to main application home
+                Route: GET /
+                Purpose: Navigate back to main portal selection
+                -->
+                <a href="/" class="btn btn-secondary">
+                    Main Home
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

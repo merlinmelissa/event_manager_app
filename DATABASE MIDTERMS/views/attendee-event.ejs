@@ -1,0 +1,245 @@
+<!--
+Purpose: Public event details and ticket booking interface
+Database Interactions:
+- GET: Retrieves event details and current booking counts
+- POST: Creates new booking record and updates ticket availability
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/main.css" />
+    <!-- Dynamic title using event title from database -->
+    <title><%= event.title %> - Event Details</title>
+</head>
+<body>
+    <!-- Header with attendee navigation -->
+    <div class="header">
+        <div class="container">
+            <h1>Attendee Event Page</h1>
+            <p>View event details and make your booking</p>
+            
+            <div class="nav-links">
+                <a href="/attendee">← Back to Browse Events</a>
+                <a href="/">Main Home</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 
+        Event Information Display
+        Data from events table for published event
+        -->
+        <div class="card">
+            <div class="event-header">
+                <span class="status-badge status-published">Published</span>
+                <h2><%= event.title %></h2>
+            </div>
+            
+            <div class="event-details">
+                <div class="event-info">
+                    <h3>Event Description</h3>
+                    <p><%= event.description %></p>
+                </div>
+                
+                <div class="event-info">
+                    <h3>Event Date & Time</h3>
+                    <p><%= new Date(event.event_date).toLocaleString() %></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 
+        Ticket Booking Section
+        Calculates available tickets based on total tickets minus booked tickets
+        -->
+        <div class="card">
+            <h2>Book Your Tickets</h2>
+            
+            <% 
+                // Calculate available tickets from database values
+                // full_booked and concession_booked come from booking aggregation
+                const fullTicketsAvailable = event.full_price_tickets - event.full_booked;
+                const concessionTicketsAvailable = event.concession_tickets - event.concession_booked;
+            %>
+
+            <!-- Display current ticket availability -->
+            <div class="ticket-availability">
+                <div class="ticket-type">
+                    <h3>Full Price Tickets</h3>
+                    <div class="ticket-details">
+                        <div class="price">$<%= event.full_price_cost %> per ticket</div>
+                        <div class="available">
+                            <%= fullTicketsAvailable %> of <%= event.full_price_tickets %> tickets available
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ticket-type">
+                    <h3>Concession Tickets</h3>
+                    <div class="ticket-details">
+                        <div class="price">$<%= event.concession_cost %> per ticket</div>
+                        <div class="available">
+                            <%= concessionTicketsAvailable %> of <%= event.concession_tickets %> tickets available
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden inputs for JavaScript price calculations -->
+            <input type="hidden" id="fullPriceCost" value="<%= event.full_price_cost %>">
+            <input type="hidden" id="concessionCost" value="<%= event.concession_cost %>">
+
+            <!-- 
+            POST /attendee/book/:event_id
+            Purpose: Creates new booking record in bookings table
+            Inputs: attendee_name, full_price_tickets, concession_tickets
+            Database: INSERT INTO bookings (event_id, attendee_name, full_price_tickets, 
+                     concession_tickets, total_cost, booking_date) VALUES (?, ?, ?, ?, ?, NOW())
+            Validation: Checks ticket availability before inserting
+            -->
+            <form action="/attendee/book/<%= event.event_id %>" method="post" id="bookingForm" onsubmit="return validateBooking()">
+                <!-- Attendee information section -->
+                <div class="booking-section">
+                    <h3>Your Details</h3>
+                    <div class="form-group">
+                        <label for="attendee_name">Full Name:</label>
+                        <input type="text" id="attendee_name" name="attendee_name" class="form-control" 
+                               placeholder="Enter your full name" required>
+                    </div>
+                </div>
+
+                <!-- Ticket selection section -->
+                <div class="booking-section">
+                    <h3>Select Tickets</h3>
+                    
+                    <div class="ticket-selection">
+                        <!-- Full price ticket selection -->
+                        <div class="ticket-input">
+                            <label for="full_price_tickets">Full Price Tickets ($<%= event.full_price_cost %> each):</label>
+                            <select id="full_price_tickets" name="full_price_tickets" class="form-control" onchange="updateTotal()">
+                                <!-- Generate options based on available tickets -->
+                                <% for (let i = 0; i <= fullTicketsAvailable; i++) { %>
+                                    <option value="<%= i %>"><%= i %></option>
+                                <% } %>
+                            </select>
+                            <small class="text-muted"><%= fullTicketsAvailable %> available</small>
+                        </div>
+                        
+                        <!-- Concession ticket selection -->
+                        <div class="ticket-input">
+                            <label for="concession_tickets">Concession Tickets ($<%= event.concession_cost %> each):</label>
+                            <select id="concession_tickets" name="concession_tickets" class="form-control" onchange="updateTotal()">
+                                <!-- Generate options based on available tickets -->
+                                <% for (let i = 0; i <= concessionTicketsAvailable; i++) { %>
+                                    <option value="<%= i %>"><%= i %></option>
+                                <% } %>
+                            </select>
+                            <small class="text-muted"><%= concessionTicketsAvailable %> available</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic total cost display -->
+                <div class="booking-summary">
+                    <div class="total-cost">
+                        <h3>Total Cost: $<span id="totalCost">0.00</span></h3>
+                    </div>
+                </div>
+
+                <!-- Form submission buttons -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="bookButton">
+                        Book Tickets
+                    </button>
+                    <a href="/attendee" class="btn btn-secondary">
+                        ← Back to Browse Events
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sold out message when no tickets available -->
+        <% if (fullTicketsAvailable === 0 && concessionTicketsAvailable === 0) { %>
+            <div class="card">
+                <div class="sold-out-message">
+                    <h3>Event Sold Out</h3>
+                    <p>Unfortunately, all tickets for this event have been sold. Please check back later or browse other available events.</p>
+                    <a href="/attendee" class="btn btn-primary">
+                        ← Browse Other Events
+                    </a>
+                </div>
+            </div>
+        <% } %>
+    </div>
+
+    <script>
+        // Client-side JavaScript for dynamic price calculation and validation
+        
+        /**
+         * Updates the total cost display based on selected tickets
+         * Calculates: (full_price_tickets * full_price_cost) + (concession_tickets * concession_cost)
+         * Updates UI elements and button state
+         */
+        function updateTotal() {
+            const fullPriceTickets = parseInt(document.getElementById('full_price_tickets').value) || 0;
+            const concessionTickets = parseInt(document.getElementById('concession_tickets').value) || 0;
+            const fullPriceCost = parseFloat(document.getElementById('fullPriceCost').value);
+            const concessionCost = parseFloat(document.getElementById('concessionCost').value);
+            
+            // Calculate total cost
+            const total = (fullPriceTickets * fullPriceCost) + (concessionTickets * concessionCost);
+            document.getElementById('totalCost').textContent = total.toFixed(2);
+            
+            // Update booking button state based on selection
+            const bookButton = document.getElementById('bookButton');
+            if (fullPriceTickets > 0 || concessionTickets > 0) {
+                bookButton.disabled = false;
+                bookButton.textContent = 'Book Tickets';
+            } else {
+                bookButton.disabled = true;
+                bookButton.textContent = 'Select Tickets to Book';
+            }
+        }
+        
+        /**
+         * Validates booking form before submission
+         * Checks: attendee name provided, at least one ticket selected
+         * Shows confirmation dialog with booking summary
+         * Returns: boolean - true to proceed with form submission
+         */
+        function validateBooking() {
+            const fullPriceTickets = parseInt(document.getElementById('full_price_tickets').value) || 0;
+            const concessionTickets = parseInt(document.getElementById('concession_tickets').value) || 0;
+            const attendeeName = document.getElementById('attendee_name').value.trim();
+            
+            // Validate attendee name
+            if (!attendeeName) {
+                alert('Please enter your full name.');
+                return false;
+            }
+            
+            // Validate ticket selection
+            if (fullPriceTickets === 0 && concessionTickets === 0) {
+                alert('Please select at least one ticket to book.');
+                return false;
+            }
+            
+            // Calculate total and show confirmation
+            const fullPriceCost = parseFloat(document.getElementById('fullPriceCost').value);
+            const concessionCost = parseFloat(document.getElementById('concessionCost').value);
+            const total = (fullPriceTickets * fullPriceCost) + (concessionTickets * concessionCost);
+            const confirmMessage = `Confirm your booking:\n\nName: ${attendeeName}\nFull Price Tickets: ${fullPriceTickets}\nConcession Tickets: ${concessionTickets}\nTotal Cost: $${total.toFixed(2)}\n\nProceed with booking?`;
+            
+            return confirm(confirmMessage);
+        }
+        
+        // Initialize page functionality when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTotal(); // Set initial total calculation
+        });
+    </script>
+</body>
+</html>

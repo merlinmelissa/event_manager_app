@@ -1,0 +1,126 @@
+<!--
+Purpose: Allows organizers to modify existing event details OR create new events
+Database Interactions:
+- GET: Retrieves event data by event_id from events table (for editing)
+- POST: Updates event record with new values (for editing) OR creates new event (for creation)
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/main.css" />
+    <title><%= event.event_id ? 'Edit Event' : 'Create Event' %></title>
+</head>
+<body>
+    <!-- Header with navigation for organizer context -->
+    <div class="header">
+        <div class="container">
+            <h1><%= event.event_id ? 'Edit Event' : 'Create Event' %></h1>
+            <p><%= event.event_id ? 'Update the details for your event' : 'Create a new event' %></p>
+            
+            <div class="nav-links">
+                <a href="/organiser">← Back to Organiser Home</a>
+                <!-- Session termination for security -->
+                <form action="/organiser/logout" method="post" style="display: inline;">
+                    <button type="submit" class="nav-links-logout">
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Event Details</h2>
+            <p class="text-muted">
+                <%= event.event_id ? 'Update your event by modifying the information below.' : 'Fill in the details for your new event.' %>
+            </p>
+            
+            <!-- 
+            Dynamic form action:
+            - For editing: POST /organiser/edit-event/:event_id
+            - For creating: POST /organiser/create-event
+            -->
+            <form action="<%= event.event_id ? '/organiser/edit-event/' + event.event_id : '/organiser/create-event' %>" method="post">
+                <!-- Basic event information fields -->
+                <div class="form-group">
+                    <label for="title">Event Title:</label>
+                    <!-- Pre-filled with current event.title from database (or empty for new events) -->
+                    <input type="text" id="title" name="title" class="form-control" 
+                           value="<%= event.title || '' %>" placeholder="Enter event title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Event Description:</label>
+                    <!-- Pre-filled with current event.description from database (or empty for new events) -->
+                    <textarea id="description" name="description" class="form-control" 
+                              rows="4" placeholder="Describe your event..." required><%= event.description || '' %></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="event_date">Event Date & Time:</label>
+                    <!-- 
+                    Pre-filled with current event.event_date from database (or empty for new events)
+                    Format: YYYY-MM-DDTHH:MM for datetime-local input
+                    -->
+                    <input type="datetime-local" id="event_date" name="event_date" class="form-control" 
+                           value="<%= event.event_date || '' %>" required>
+                </div>
+                
+                <!-- Ticket configuration section -->
+                <div class="ticket-info">
+                    <!-- Full price ticket configuration -->
+                    <div class="ticket-type">
+                        <h4>Full Price Tickets</h4>
+                        <div class="form-group">
+                            <label for="full_price_tickets">Number of Tickets:</label>
+                            <!-- Current full_price_tickets count from events table (or 0 for new events) -->
+                            <input type="number" id="full_price_tickets" name="full_price_tickets" 
+                                   class="form-control" value="<%= event.full_price_tickets || 0 %>" 
+                                   min="0" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="full_price_cost">Price per Ticket ($):</label>
+                            <!-- Current full_price_cost from events table (or 0.00 for new events) -->
+                            <input type="number" id="full_price_cost" name="full_price_cost" 
+                                   class="form-control" value="<%= event.full_price_cost || 0.00 %>" 
+                                   min="0" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <!-- Concession ticket configuration -->
+                    <div class="ticket-type">
+                        <h4>Concession Tickets</h4>
+                        <div class="form-group">
+                            <label for="concession_tickets">Number of Tickets:</label>
+                            <!-- Current concession_tickets count from events table (or 0 for new events) -->
+                            <input type="number" id="concession_tickets" name="concession_tickets" 
+                                   class="form-control" value="<%= event.concession_tickets || 0 %>" 
+                                   min="0" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="concession_cost">Price per Ticket ($):</label>
+                            <!-- Current concession_cost from events table (or 0.00 for new events) -->
+                            <input type="number" id="concession_cost" name="concession_cost" 
+                                   class="form-control" value="<%= event.concession_cost || 0.00 %>" 
+                                   min="0" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form action buttons -->
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <%= event.event_id ? 'Update Event' : 'Create Event' %>
+                    </button>
+                    <a href="/organiser" class="btn btn-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

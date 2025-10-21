@@ -1,0 +1,109 @@
+<!--
+Purpose: Displays all published events to attendees with booking information
+Database Interactions:
+- GET: Retrieves all events with status='published' from events table
+- GET: Retrieves site settings from settings table for site branding
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/main.css" />
+    <title>Browse Events - <%= settings.site_name %></title>
+</head>
+<body>
+    <!-- Header section with site branding and navigation -->
+    <div class="header">
+        <div class="container">
+            <h1>Attendee Home Page</h1>
+            <p>Browse and book events</p>
+            <div class="nav-links">
+                <a href="/">Main Home</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Site Information section -->
+        <!-- 
+        Data Source: settings table
+        Purpose: Display site branding information to attendees
+        -->
+        <div class="card">
+            <h2><%= settings.site_name %></h2>
+            <p><%= settings.site_description %></p>
+        </div>
+
+        <!-- Published Events section -->
+        <!-- 
+        Data Source: events table filtered by status='published'
+        Purpose: Display all available events for booking
+        -->
+        <div class="card">
+            <h2>Upcoming Events</h2>
+            <% if (events.length === 0) { %>
+                <!-- No events available message -->
+                <p class="text-muted">No events are currently available for booking.</p>
+            <% } else { %>
+                <!-- Event listing loop -->
+                <div class="event-list">
+                    <% events.forEach(event => { %>
+                        <div class="event-item">
+                            <!-- Event status indicator -->
+                            <span class="status-badge status-published">Published</span>
+                            
+                            <!-- Basic event information -->
+                            <h3><%= event.title %></h3>
+                            <div class="event-meta">
+                                <!-- 
+                                Display formatted event date
+                                Source: event.event_date from events table
+                                -->
+                                <p><strong>Date:</strong> <%= new Date(event.event_date).toLocaleString() %></p>
+                                <p><strong>Description:</strong> <%= event.description %></p>
+                            </div>
+                            
+                            <!-- Ticket availability and pricing information -->
+                            <!-- 
+                            Data calculations:
+                            - Available tickets = total_tickets - booked_tickets
+                            - Pricing from events table columns
+                            -->
+                            <div class="ticket-info">
+                                <!-- Full price ticket information -->
+                                <div class="ticket-type">
+                                    <h4>Full Price</h4>
+                                    <div class="price">$<%= event.full_price_cost %></div>
+                                    <div class="available">
+                                        <%= event.full_price_tickets - event.full_booked %> of <%= event.full_price_tickets %> available
+                                    </div>
+                                </div>
+                                <!-- Concession ticket information -->
+                                <div class="ticket-type">
+                                    <h4>Concession</h4>
+                                    <div class="price">$<%= event.concession_cost %></div>
+                                    <div class="available">
+                                        <%= event.concession_tickets - event.concession_booked %> of <%= event.concession_tickets %> available
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Event booking action -->
+                            <!-- 
+                            Navigation: Links to /attendee/event/:event_id
+                            Purpose: Allows attendees to view details and make bookings
+                            -->
+                            <div class="event-actions">
+                                <button type="button" class="btn btn-primary" onclick="window.location.href='/attendee/event/<%= event.event_id %>'">
+                                    View Details & Book
+                                </button>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html>

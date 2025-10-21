@@ -1,0 +1,196 @@
+<!--
+Purpose: Dashboard for event organizers to manage events and settings
+Database Interactions:
+- GET: Retrieves site settings, published events, and draft events
+- Required queries:
+  1. SELECT * FROM settings WHERE id=1
+  2. SELECT * FROM events WHERE status='published' ORDER BY event_date ASC
+  3. SELECT * FROM events WHERE status='draft' ORDER BY last_modified DESC
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/main.css" />
+    <!-- Dynamic title using site_name from settings table -->
+    <title>Organiser Home - <%= settings.site_name %></title>
+</head>
+<body>
+    <!-- Header with main navigation options -->
+    <div class="header">
+        <div class="container">
+            <h1>Organiser Home Page</h1>
+            <p>Manage your events and settings</p>
+            
+            <div class="nav-links">
+                <a href="/">Main Home</a>
+                <a href="/organiser/settings">Site Settings</a>
+                <!-- Secure logout functionality -->
+                <form action="/organiser/logout" method="post" style="display: inline;">
+                    <button type="submit" class="nav-links-logout">
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 
+        Site Information Display
+        Data Source: settings table - SELECT site_name, site_description FROM settings
+        -->
+        <div class="card">
+            <h2><%= settings.site_name %></h2>
+            <p><%= settings.site_description %></p>
+        </div>
+
+        <!-- 
+        Event Creation Section
+        GET /organiser/create-event - Navigates to event creation form
+        -->
+        <div class="card">
+            <h2>Create New Event</h2>
+            <form action="/organiser/create-event" method="get" style="display: inline;">
+                <button type="submit" class="btn btn-primary btn-large">
+                    Create New Event
+                </button>
+            </form>
+        </div>
+
+        <!-- 
+        Published Events Section
+        Data Source: SELECT * FROM events WHERE status='published' 
+                    ORDER BY event_date ASC
+        Includes booking counts via JOIN with bookings table
+        -->
+        <div class="card">
+            <h2>Published Events</h2>
+            <% if (publishedEvents.length === 0) { %>
+                <p class="text-muted">No published events yet.</p>
+            <% } else { %>
+                <div class="event-list">
+                    <!-- Loop through published events array -->
+                    <% publishedEvents.forEach(event => { %>
+                        <div class="event-item">
+                            <h3><%= event.title %></h3>
+                            
+                            <!-- Event metadata from events table -->
+                            <div class="event-meta">
+                                <p><strong>Date:</strong> <%= new Date(event.event_date).toLocaleString() %></p>
+                                <p><strong>Created:</strong> <%= new Date(event.created_date).toLocaleDateString() %></p>
+                                <p><strong>Published:</strong> <%= new Date(event.published_date).toLocaleDateString() %></p>
+                                
+                                <!-- 
+                                Ticket availability calculation
+                                full_booked and concession_booked from bookings table aggregation:
+                                SELECT SUM(full_price_tickets) as full_booked, 
+                                       SUM(concession_tickets) as concession_booked 
+                                FROM bookings WHERE event_id = ?
+                                -->
+                                <p><strong>Tickets:</strong> 
+                                    Full Price: <%= event.full_price_tickets - event.full_booked %>/<%= event.full_price_tickets %> available | 
+                                    Concession: <%= event.concession_tickets - event.concession_booked %>/<%= event.concession_tickets %> available
+                                </p>
+                            </div>
+                            
+                            <!-- Public sharing link for attendees -->
+                            <div class="share-link">
+                                <strong>Share Link:</strong> http://localhost:3000/attendee/event/<%= event.event_id %>
+                            </div>
+                            
+                            <!-- Event management actions -->
+                            <div class="event-actions">
+                                <!-- GET /organiser/edit-event/:id - Load edit form -->
+                                <form action="/organiser/edit-event/<%= event.event_id %>" method="get" style="display: inline;">
+                                    <button type="submit" class="btn btn-secondary">
+                                        Edit
+                                    </button>
+                                </form>
+                                
+                                <!-- 
+                                POST /organiser/delete-event/:id 
+                                Database: DELETE FROM events WHERE event_id = ?
+                                Also cascades to DELETE FROM bookings WHERE event_id = ?
+                                -->
+                                <form action="/organiser/delete-event/<%= event.event_id %>" method="post" style="display: inline;" 
+                                      onsubmit="return confirm('Are you sure you want to delete this event?')">
+                                    <button type="submit" class="btn btn-danger">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- 
+        Draft Events Section
+        Data Source: SELECT * FROM events WHERE status='draft' 
+                    ORDER BY last_modified DESC
+        Shows unpublished events that can be edited and published
+        -->
+        <div class="card">
+            <h2>Draft Events</h2>
+            <% if (draftEvents.length === 0) { %>
+                <p class="text-muted">No draft events.</p>
+            <% } else { %>
+                <div class="event-list">
+                    <!-- Loop through draft events array -->
+                    <% draftEvents.forEach(event => { %>
+                        <div class="event-item">
+                            <span class="status-badge status-draft">Draft</span>
+                            <h3><%= event.title %></h3>
+                            
+                            <!-- Draft event metadata -->
+                            <div class="event-meta">
+                                <p><strong>Date:</strong> <%= new Date(event.event_date).toLocaleString() %></p>
+                                <p><strong>Created:</strong> <%= new Date(event.created_date).toLocaleDateString() %></p>
+                                <p><strong>Last Modified:</strong> <%= new Date(event.last_modified).toLocaleDateString() %></p>
+                                
+                                <!-- Ticket configuration for drafts (no bookings yet) -->
+                                <p><strong>Tickets:</strong> 
+                                    Full Price: <%= event.full_price_tickets %> ($<%= event.full_price_cost %>) | 
+                                    Concession: <%= event.concession_tickets %> ($<%= event.concession_cost %>)
+                                </p>
+                            </div>
+                            
+                            <!-- Draft event management actions -->
+                            <div class="event-actions">
+                                <!-- Edit draft event -->
+                                <form action="/organiser/edit-event/<%= event.event_id %>" method="get" style="display: inline;">
+                                    <button type="submit" class="btn btn-secondary">
+                                        Edit
+                                    </button>
+                                </form>
+                                
+                                <!-- 
+                                POST /organiser/publish-event/:id
+                                Database: UPDATE events SET status='published', 
+                                         published_date=NOW() WHERE event_id = ?
+                                -->
+                                <form action="/organiser/publish-event/<%= event.event_id %>" method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-success">
+                                        Publish
+                                    </button>
+                                </form>
+                                
+                                <!-- Delete draft event -->
+                                <form action="/organiser/delete-event/<%= event.event_id %>" method="post" style="display: inline;" 
+                                      onsubmit="return confirm('Are you sure you want to delete this event?')">
+                                    <button type="submit" class="btn btn-danger">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html>
